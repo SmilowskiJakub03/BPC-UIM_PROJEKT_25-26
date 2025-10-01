@@ -21,6 +21,7 @@ Description:
 # Import necessary modules
 import numpy as np
 # My model
+# testovací komentář
 
 def load_data(
     # Add your parameters here....
