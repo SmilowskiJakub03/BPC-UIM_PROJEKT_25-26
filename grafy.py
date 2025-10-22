@@ -90,7 +90,7 @@ def stats_and_corr_heatmap(file_path:str):
 
 
     plt.figure(figsize=(12,12))
-    sns.heatmap(df.corr(), annot=True, cmap='coolwarm').set_title('Correlation Heatmap')
+    sns.heatmap(df.corr(method="pearson"), annot=True, cmap='coolwarm').set_title('Correlation Heatmap')
     plt.show()
 
 
@@ -117,6 +117,3 @@ def show_plots_and_stats(idx:int):
         stats_and_corr_heatmap(test_path_file_list[idx])
     else:
         print(f"{idx} is invalid input, it must be an integer: 0, 1, or 2!")
-
-
-
