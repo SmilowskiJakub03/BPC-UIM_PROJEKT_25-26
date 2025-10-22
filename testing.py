@@ -20,28 +20,54 @@ Description:
     provede testování a vypíše výsledky včetně matice záměny a mathews correlation coefficient.
 """
 # Import necessary modules
+import pandas as pd
+import joblib
 import numpy as np
 
-def test_model(
-    # Add your parameters here....
-    ) -> np.ndarray:
+# Import funkcí z mainu
+from main import data_preprocessing, compute_statistics
+
+def test_model(model_path="trained_model_rf.pkl", test_data_path="test_preprocessed_IMPUTE.csv"):
     """
-    Function to test your model.
+    Otestuje natrénovaný model na zadaném testovacím datasetu.
 
     Parameters
     ----------
-    Add your parameters here....
+    model_path : str
+        Cesta k uloženému modelu (.pkl soubor).
+    test_data_path : str
+        Cesta k CSV souboru s testovacími daty.
+
+    Returns
+    -------
+    cm : np.ndarray
+        Confusion matrix (TN, FP, FN, TP).
+    mcc : float
+        Matthews correlation coefficient.
     """
-    # Test and return your results
-    # load data
-    # load model
 
-    # test_results = None
+    #Načtení uloženého modelu
+    model = joblib.load(model_path)
 
-    # compute metrics
-    # print confusion matrix
-    # print mathews correlation coefficient
-    raise NotImplementedError("Function test_model() is not implemented.")
+    #Načtení testovacích dat
+    df_test = pd.read_csv(test_data_path)
+
+    #Předzpracování dat
+    df_test = data_preprocessing(df_test) # main musí být čistě trénovací
+
+    #Rozdělení na vstupy (X) a cílovou proměnnou
+    X_test = df_test.drop(columns=["Outcome"])
+    y_test = df_test["Outcome"]
+
+    # 5. Predikce na testovacích datech
+    y_pred = model.predict(X_test)
+
+    # Vyhodnocení (z mainu)
+    cm, mcc = compute_statistics(y_test, y_pred, plot=True) # TRUE pro plot cm
+
+    return cm, mcc
+
 
 if __name__ == "__main__":
+    # Spustí test modelu
     test_model()
