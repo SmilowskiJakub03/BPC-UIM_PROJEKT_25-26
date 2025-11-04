@@ -27,7 +27,7 @@ import numpy as np
 # Import funkcí z mainu
 from main import data_preprocessing, compute_statistics
 
-def test_model(model_path="trained_model_rf.pkl", test_data_path="test_preprocessed_IMPUTE.csv"):
+def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preprocessed_xgb.csv"):
     """
     Otestuje natrénovaný model na zadaném testovacím datasetu.
 
@@ -50,14 +50,11 @@ def test_model(model_path="trained_model_rf.pkl", test_data_path="test_preproces
     model = joblib.load(model_path)
 
     #Načtení testovacích dat
-    df_test = pd.read_csv(test_data_path)
-
-    #Předzpracování dat
-    df_test = data_preprocessing(df_test) # main musí být čistě trénovací
+    test_df = pd.read_csv(test_data_path)
 
     #Rozdělení na vstupy (X) a cílovou proměnnou
-    X_test = df_test.drop(columns=["Outcome"])
-    y_test = df_test["Outcome"]
+    X_test = test_df.drop(columns=["Outcome"])
+    y_test = test_df["Outcome"]
 
     # 5. Predikce na testovacích datech
     y_pred = model.predict(X_test)

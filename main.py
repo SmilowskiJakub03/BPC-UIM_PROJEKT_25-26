@@ -55,10 +55,7 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
         Testovací dataset.
     """
     df = pd.read_csv(path)
-    train_df, test_df = train_test_split(
-        df, test_size=test_size, random_state=random_state, stratify=df["Outcome"]
-    )
-    return train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+    return df
 
 # === Preprocessing ====
 def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
@@ -138,7 +135,7 @@ def my_model(model_type: str = "rf", random_state: int = 42):
         return LogisticRegression(solver="liblinear", random_state=random_state, max_iter=1000)
     elif model_type == "rf":
         return RandomForestClassifier(
-            n_estimators=200, random_state=random_state, class_weight="balanced"
+            n_estimators=30, random_state=random_state, class_weight="balanced"
         )
     elif model_type == "xgb":
         return XGBClassifier(
@@ -207,17 +204,21 @@ def main():
     """
 
     # Načtení dat
-    train_df, test_df = load_data("diabetes_data.csv")
+    df = load_data("diabetes_data.csv")
 
     # Preprocessing
-    train_df = data_preprocessing(train_df)
-    test_df = data_preprocessing(test_df)
+    df = data_preprocessing(df)
+
+    # 2. Rozdělení dat: 70/15/15
+    train_df, temp_df = train_test_split(df, test_size=0.3, random_state=42, stratify=df["Outcome"])
+    valid_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42, stratify=temp_df["Outcome"])
+
 
     # Rozdělení X a y
     #X → matice vstupních proměnných (nezávislé proměnné, prediktory).
     #y → vektor cílových hodnot (závislá proměnná, co chceme předpovědět).
     X_train, y_train = train_df.drop(columns=["Outcome"]), train_df["Outcome"]
-    X_test, y_test = test_df.drop(columns=["Outcome"]), test_df["Outcome"]
+    X_valid, y_valid = valid_df.drop(columns=["Outcome"]), valid_df["Outcome"]
 
     # Inicializace modelu (výchozí – Random Forest)
     model = my_model("xgb")
@@ -227,15 +228,20 @@ def main():
     model.fit(X_train, y_train)
 
     # Predikce
-    y_pred = model.predict(X_test)
+    y_pred_valid = model.predict(X_valid)
 
     # Vyhodnocení
-    compute_statistics(y_test, y_pred,plot=True)
+    compute_statistics(y_valid, y_pred_valid,plot=True)
 
     # Uložení modelu
     #joblib.dump(model, "trained_model_rf.pkl")
-    #joblib.dump(model, "trained_model_logreg.pkl")
+    #joblib.dump(model, "trained_model_logref.pkl")
     joblib.dump(model, "trained_model_xgb.pkl")
+
+    # Uložení testovacích dat do CSV
+    #test_df.to_csv("test_preprocessed_rf.csv", index=False)
+    #test_df.to_csv("test_preprocessed_logref.csv", index=False)
+    test_df.to_csv("test_preprocessed_xgb.csv", index=False)
 
 if __name__ == "__main__":
     main()
