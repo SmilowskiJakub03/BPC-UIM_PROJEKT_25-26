@@ -106,7 +106,7 @@ print(test_data.head())
 # Preprocessing uložení
 #train_data = data_preprocessing(train_data, save_path="train_preprocessed_NAN.csv")
 #test_data = data_preprocessing(test_data, save_path="test_preprocessed_NAN.csv")
-train_data = data_preprocessing(train_data, save_path="train_preprocessed_IMPUTE.csv")
+#train_data = data_preprocessing(train_data, save_path="train_preprocessed_IMPUTE.csv")
 test_data = data_preprocessing(test_data, save_path="test_preprocessed_IMPUTE.csv")
 
 # Preprocessing
