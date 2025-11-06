@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import StandardScaler
 
 def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_state: int = 42):
     # Načtení dat
@@ -65,11 +66,21 @@ def data_preprocessing(df: pd.DataFrame, save_path: str ) -> pd.DataFrame:
     for col in ["Pregnancies", "BloodPressure", "SkinThickness", "Insulin", "Age"]:
         df_imputed[col] = df_imputed[col].round(0).astype(int)
 
+    # Z-score škálování
+    features = df_imputed.drop(columns=["Outcome"])
+    scaler = StandardScaler()
+    scaled_features = scaler.fit_transform(features)
+    df_scaled = pd.DataFrame(scaled_features, columns=features.columns)
+    df_scaled["Outcome"] = df_imputed["Outcome"]
+
     #  === Uložení datasetu s NaN ===
-    #df.to_csv(save_path, index=False)
+    df.to_csv(save_path, index=False)
 
     # === Uložení datasetu s IMPUTACÍ ===
-    df_imputed.to_csv(save_path, index=False)
+    #df_imputed.to_csv(save_path, index=False)
+
+    # === Uložení datasetu se Z-score ===
+    #df_scaled.to_csv(save_path, index=False)
 
     # === Výpočet počtu NaN hodnot ===
     # nan_counts = df.isna().sum()
@@ -85,35 +96,39 @@ def data_preprocessing(df: pd.DataFrame, save_path: str ) -> pd.DataFrame:
     # plt.tight_layout()
     # plt.show()
 
-    #return  df #data_preprocessing hodnoty s NAN
-    return df_imputed #data_preprocessing hodnoty s IMPUTEM
+    return  df #data_preprocessing hodnoty s NAN
+    #return df_imputed #data_preprocessing hodnoty s IMPUTEM
+    #return df_scaled #data_preprocessing se Z - score
 
 
-train_data, test_data = load_data("diabetes_data.csv")
+# === Spuštění ===
+if __name__ == "__main__":
+    train_data, test_data = load_data("diabetes_data.csv")
 
-pd.set_option("display.max_columns",None)
-pd.set_option("display.width",None)
-pd.set_option("display.max_rows",None)
+    pd.set_option("display.max_columns",None)
+    pd.set_option("display.width",None)
+    pd.set_option("display.max_rows",None)
 
-# raw data
-print("\nPo preprocessingu (train):")
-print("Train set:", train_data.shape)
-print("Test set:", test_data.shape)
+    # raw data
+    print("\nPo preprocessingu (train):")
+    print("Train set:", train_data.shape)
+    print("Test set:", test_data.shape)
 
-print(train_data.head())
-print(test_data.head())
+    print(train_data.head())
+    print(test_data.head())
 
-# Preprocessing uložení
-#train_data = data_preprocessing(train_data, save_path="train_preprocessed_NAN.csv")
-#test_data = data_preprocessing(test_data, save_path="test_preprocessed_NAN.csv")
-#train_data = data_preprocessing(train_data, save_path="train_preprocessed_IMPUTE.csv")
-test_data = data_preprocessing(test_data, save_path="test_preprocessed_IMPUTE.csv")
+    # Preprocessing uložení
+    train_data = data_preprocessing(train_data, save_path="train_preprocessed_NAN.csv") #train NAN
+    test_data = data_preprocessing(test_data, save_path="test_preprocessed_NAN.csv") #test NAN
+    #train_data = data_preprocessing(train_data, save_path="train_preprocessed_IMPUTE.csv") # train IMPUTE
+    #test_data = data_preprocessing(test_data, save_path="test_preprocessed_IMPUTE.csv") # test IMPUTE
+    #train_data = data_preprocessing(train_data, save_path="train_preprocessed_ZSCORE.csv") # train ZSCORE
+    #test_data = data_preprocessing(train_data, save_path="test_preprocessed_ZSCORE.csv") # test ZCORE
 
-# Preprocessing
-#train_data = data_preprocessing(train_data)
-#test_data = data_preprocessing(test_data)
 
-print("\nPo preprocessingu (train):")
-print(train_data.head())
-print(test_data.head())
+    # Preprocessing
+
+    print("\nPo preprocessingu:")
+    print(train_data.head())
+    print(test_data.head())
 

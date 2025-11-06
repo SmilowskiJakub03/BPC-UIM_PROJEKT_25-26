@@ -25,7 +25,10 @@ import joblib
 import numpy as np
 
 # Import funkcí z mainu
-from main import data_preprocessing, compute_statistics
+from main import  compute_statistics
+
+# při odevzdání trénování modelu na celém datasetu
+# testing skript upravit aby nahrál model, přidat preproccesinf na test_data_path
 
 def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preprocessed_xgb.csv"):
     """
@@ -56,7 +59,7 @@ def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preproce
     X_test = test_df.drop(columns=["Outcome"])
     y_test = test_df["Outcome"]
 
-    # 5. Predikce na testovacích datech
+    #Predikce na testovacích datech
     y_pred = model.predict(X_test)
 
     # Vyhodnocení (z mainu)

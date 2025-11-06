@@ -103,7 +103,8 @@ def show_plots_and_stats(idx:int):
     """
 
 
-    test_path_file_list = ["diabetes_data.csv", "test_preprocessed_NAN.csv", "train_preprocessed_NAN.csv", "test_preprocessed_IMPUTE.csv","train_preprocessed_IMPUTE.csv" ]
+    test_path_file_list = ["diabetes_data.csv", "test_preprocessed_NAN.csv", "train_preprocessed_NAN.csv", "test_preprocessed_IMPUTE.csv","train_preprocessed_IMPUTE.csv",
+                           "train_preprocessed_ZSCORE.csv","test_preprocessed_ZSCORE.csv"]
 
     if idx == 0:
         boxplots(test_path_file_list[idx])
@@ -120,7 +121,14 @@ def show_plots_and_stats(idx:int):
     elif idx == 4:
         boxplots(test_path_file_list[idx])
         stats_and_corr_heatmap(test_path_file_list[idx])
-    else:
-        print(f"{idx} is invalid input, it must be an integer: 0, 1, or 2!")
+    elif idx == 5:
+        boxplots(test_path_file_list[idx])
+        stats_and_corr_heatmap(test_path_file_list[idx])
+    elif idx == 6:
+        boxplots(test_path_file_list[idx])
+        stats_and_corr_heatmap(test_path_file_list[idx])
 
-show_plots_and_stats(3)
+    else:
+        print(f"{idx} is invalid input, it must be an integer")
+
+show_plots_and_stats(6)

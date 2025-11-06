@@ -31,6 +31,8 @@ from xgboost import XGBClassifier
 from sklearn.metrics import confusion_matrix, matthews_corrcoef
 import seaborn as sns
 import joblib
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
 
 # My model
 # ==== LOAD DATA === #
@@ -58,7 +60,7 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
     return df
 
 # === Preprocessing ====
-def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
+def data_preprocessing(df: pd.DataFrame, scale_for_model: str = None) -> pd.DataFrame:
     """
     Předzpracování dat: odstranění chybných hodnot, imputace pomocí KNN.
 
@@ -111,7 +113,16 @@ def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     for col in ["Pregnancies", "BloodPressure", "SkinThickness", "Insulin", "Age"]:
         df_imputed[col] = df_imputed[col].round(0).astype(int)
 
-    return df_imputed
+    # Volitelné Z-score škálování pro logref a svc      # rf a xgb nechceme
+    if scale_for_model in ["logreg","svc"]:
+        scaler = StandardScaler()
+        features = df_imputed.drop(columns=["Outcome"])
+        scaled_features = scaler.fit_transform(features)
+        df_scaled = pd.DataFrame(scaled_features, columns=features.columns)
+        df_scaled["Outcome"] = df_imputed["Outcome"]
+        return df_scaled
+    else:
+        return df_imputed
 
 
 # === MODEL ===
@@ -132,17 +143,39 @@ def my_model(model_type: str = "rf", random_state: int = 42):
         Inicializovaný model připravený k trénování.
     """
     if model_type == "logreg":
-        return LogisticRegression(solver="liblinear", random_state=random_state, max_iter=1000)
+        return LogisticRegression(
+            solver="liblinear",
+            random_state=random_state,
+            max_iter=1000,
+            C=0.001
+        )
     elif model_type == "rf":
         return RandomForestClassifier(
-            n_estimators=30, random_state=random_state, class_weight="balanced"
+            n_estimators=100,
+            random_state=random_state,
+            class_weight="balanced",
+            min_samples_split=5
         )
     elif model_type == "xgb":
         return XGBClassifier(
-            n_estimators=300, learning_rate=0.05, max_depth=4,
-            subsample=0.8, colsample_bytree=0.8,
-            random_state=random_state, use_label_encoder=False, eval_metric="logloss"
+            n_estimators=300,
+            learning_rate=0.01,
+            max_depth=3,
+            subsample=1,
+            colsample_bytree=1,
+            random_state=random_state,
+            eval_metric="logloss"
         )
+    elif model_type == "svc":
+        return SVC(
+            kernel="rbf",
+            probability=True,
+            class_weight="balanced",
+            C=100.0,
+            gamma=0.01,
+            random_state=random_state
+        )
+
     else:
         raise ValueError("Neznámý model_type. Použij 'logreg', 'rf' nebo 'xgb'.")
 
@@ -207,7 +240,9 @@ def main():
     df = load_data("diabetes_data.csv")
 
     # Preprocessing
-    df = data_preprocessing(df)
+    df = data_preprocessing(df,)
+    # pro zapnutí škálování
+    # Typ modelu: 'logreg' = Logistic Regression, 'svc' = Support Vector Classifier
 
     # 2. Rozdělení dat: 70/15/15
     train_df, temp_df = train_test_split(df, test_size=0.3, random_state=42, stratify=df["Outcome"])
@@ -222,7 +257,7 @@ def main():
 
     # Inicializace modelu (výchozí – Random Forest)
     model = my_model("xgb")
-    # Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost
+    # Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost, 'svc' = Support Vector Classifier
 
     # Trénink modelu
     model.fit(X_train, y_train)
@@ -235,13 +270,15 @@ def main():
 
     # Uložení modelu
     #joblib.dump(model, "trained_model_rf.pkl")
-    #joblib.dump(model, "trained_model_logref.pkl")
+    #joblib.dump(model, "trained_model_logreg.pkl")
     joblib.dump(model, "trained_model_xgb.pkl")
+    #joblib.dump(model, "trained_model_svc.pkl")
 
     # Uložení testovacích dat do CSV
     #test_df.to_csv("test_preprocessed_rf.csv", index=False)
-    #test_df.to_csv("test_preprocessed_logref.csv", index=False)
+    #test_df.to_csv("test_preprocessed_logreg.csv", index=False)
     test_df.to_csv("test_preprocessed_xgb.csv", index=False)
+    #test_df.to_csv("test_preprocessed_svc.csv", index=False)
 
 if __name__ == "__main__":
     main()
