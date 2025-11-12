@@ -60,7 +60,7 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
     return df
 
 # === Preprocessing ====
-def data_preprocessing(df: pd.DataFrame, scale_for_model: str = None) -> pd.DataFrame:
+def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     """
     Předzpracování dat: odstranění chybných hodnot, imputace pomocí KNN.
 
@@ -112,21 +112,11 @@ def data_preprocessing(df: pd.DataFrame, scale_for_model: str = None) -> pd.Data
     # Přetypování zpět u integer sloupců
     for col in ["Pregnancies", "BloodPressure", "SkinThickness", "Insulin", "Age"]:
         df_imputed[col] = df_imputed[col].round(0).astype(int)
-
-    # Volitelné Z-score škálování pro logref a svc      # rf a xgb nechceme
-    if scale_for_model in ["logreg","svc"]:
-        scaler = StandardScaler()
-        features = df_imputed.drop(columns=["Outcome"])
-        scaled_features = scaler.fit_transform(features)
-        df_scaled = pd.DataFrame(scaled_features, columns=features.columns)
-        df_scaled["Outcome"] = df_imputed["Outcome"]
-        return df_scaled
-    else:
-        return df_imputed
+    return df_imputed
 
 
 # === MODEL ===
-def my_model(model_type: str = "rf", random_state: int = 42):
+def my_model(model_type: str = "svc", random_state: int = 42):
     """
     Vytvoří a vrátí klasifikační model podle zadaného typu.
 
@@ -147,22 +137,26 @@ def my_model(model_type: str = "rf", random_state: int = 42):
             solver="liblinear",
             random_state=random_state,
             max_iter=1000,
-            C=0.001
+            C=0.001,
+            class_weight='balanced',
+            penalty = 'l2'
         )
     elif model_type == "rf":
         return RandomForestClassifier(
             n_estimators=100,
             random_state=random_state,
             class_weight="balanced",
-            min_samples_split=5
+            min_samples_split=2,
+            min_samples_leaf=2,
+            max_depth=None
         )
     elif model_type == "xgb":
         return XGBClassifier(
             n_estimators=300,
             learning_rate=0.01,
-            max_depth=3,
+            max_depth=4,
             subsample=1,
-            colsample_bytree=1,
+            colsample_bytree=0.8,
             random_state=random_state,
             eval_metric="logloss"
         )
@@ -171,8 +165,8 @@ def my_model(model_type: str = "rf", random_state: int = 42):
             kernel="rbf",
             probability=True,
             class_weight="balanced",
-            C=100.0,
-            gamma=0.01,
+            C=1,
+            gamma=0.1,
             random_state=random_state
         )
 
@@ -240,24 +234,43 @@ def main():
     df = load_data("diabetes_data.csv")
 
     # Preprocessing
-    df = data_preprocessing(df,)
-    # pro zapnutí škálování
-    # Typ modelu: 'logreg' = Logistic Regression, 'svc' = Support Vector Classifier
+    df = data_preprocessing(df)
 
-    # 2. Rozdělení dat: 70/15/15
-    train_df, temp_df = train_test_split(df, test_size=0.3, random_state=42, stratify=df["Outcome"])
-    valid_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42, stratify=temp_df["Outcome"])
-
+    # Rozdělení dat: 70/15/15
+    train_df, temp_df = train_test_split(
+        df, test_size=0.3, random_state=42, stratify=df["Outcome"]
+    )
+    valid_df, test_df = train_test_split(
+        temp_df, test_size=0.5, random_state=42, stratify=temp_df["Outcome"]
+    )
 
     # Rozdělení X a y
     #X → matice vstupních proměnných (nezávislé proměnné, prediktory).
     #y → vektor cílových hodnot (závislá proměnná, co chceme předpovědět).
-    X_train, y_train = train_df.drop(columns=["Outcome"]), train_df["Outcome"]
-    X_valid, y_valid = valid_df.drop(columns=["Outcome"]), valid_df["Outcome"]
+    X_train = train_df.drop(columns=["Outcome"])
+    y_train = train_df["Outcome"]
+
+    X_valid = valid_df.drop(columns=["Outcome"])
+    y_valid = valid_df["Outcome"]
+
+    X_test = test_df.drop(columns=["Outcome"])
+    y_test = test_df["Outcome"]
 
     # Inicializace modelu (výchozí – Random Forest)
-    model = my_model("xgb")
-    # Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost, 'svc' = Support Vector Classifier
+    model_type = "rf"  # logreg / rf / xgb / svc
+    model = my_model(model_type)
+
+    # volitelné škálování
+    scaler = None
+    if model_type in ["logreg", "svc"]:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train) # fit + transform (učíme se z tréninkových dat)
+        X_valid = scaler.transform(X_valid) # pouze transform (stejné měřítko)
+        X_test = scaler.transform(X_test)  # pouze transform (stejné měřítko)
+
+        # ulož scaler
+        joblib.dump(scaler, f"scaler_{model_type}.pkl")
+        print(f"Scaler uložen jako scaler_{model_type}.pkl")
 
     # Trénink modelu
     model.fit(X_train, y_train)
@@ -269,16 +282,10 @@ def main():
     compute_statistics(y_valid, y_pred_valid,plot=True)
 
     # Uložení modelu
-    #joblib.dump(model, "trained_model_rf.pkl")
-    #joblib.dump(model, "trained_model_logreg.pkl")
-    joblib.dump(model, "trained_model_xgb.pkl")
-    #joblib.dump(model, "trained_model_svc.pkl")
+    joblib.dump(model, f"trained_model_{model_type}.pkl")
 
     # Uložení testovacích dat do CSV
-    #test_df.to_csv("test_preprocessed_rf.csv", index=False)
-    #test_df.to_csv("test_preprocessed_logreg.csv", index=False)
-    test_df.to_csv("test_preprocessed_xgb.csv", index=False)
-    #test_df.to_csv("test_preprocessed_svc.csv", index=False)
+    test_df.to_csv(f"test_preprocessed_{model_type}.csv", index=False)
 
 if __name__ == "__main__":
     main()

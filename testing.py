@@ -23,14 +23,16 @@ Description:
 import pandas as pd
 import joblib
 import numpy as np
+import os
 
 # Import funkcí z mainu
-from main import  compute_statistics
+from main import compute_statistics
+from main import data_preprocessing
 
 # při odevzdání trénování modelu na celém datasetu
 # testing skript upravit aby nahrál model, přidat preproccesinf na test_data_path
 
-def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preprocessed_xgb.csv"):
+def test_model(model_path: str, scaler_path: str, test_data_path: str):
     """
     Otestuje natrénovaný model na zadaném testovacím datasetu.
 
@@ -53,11 +55,21 @@ def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preproce
     model = joblib.load(model_path)
 
     #Načtení testovacích dat
-    test_df = pd.read_csv(test_data_path)
+    df_test = pd.read_csv(test_data_path)
+
+    # preprocessing
+    df_test = data_preprocessing(df_test)
 
     #Rozdělení na vstupy (X) a cílovou proměnnou
-    X_test = test_df.drop(columns=["Outcome"])
-    y_test = test_df["Outcome"]
+    X_test = df_test.drop(columns=["Outcome"])
+    y_test = df_test["Outcome"]
+
+    # Načtení scaleru (pokud existuje)
+    if scaler_path is not None and os.path.exists(scaler_path):
+        scaler = joblib.load(scaler_path)
+        X_test = scaler.transform(X_test)
+    else:
+        print("Scaler nebyl nalezen — pokračuji bez škálování.")
 
     #Predikce na testovacích datech
     y_pred = model.predict(X_test)
@@ -70,4 +82,24 @@ def test_model(model_path="trained_model_xgb.pkl", test_data_path="test_preproce
 
 if __name__ == "__main__":
     # Spustí test modelu
-    test_model()
+    test_model(
+        model_path="trained_model_svc.pkl",
+        scaler_path="scaler_svc.pkl", # scaler_svc.pkl, scaler_logreg.pkl
+        test_data_path="test_preprocessed_svc.csv",
+    )
+
+    # #trained model
+    # trained_model_svc.pkl
+    # trained_model_logreg.pkl
+    # trained_model_rf.pkl
+    # trained_model_xgb.pkl
+
+    # test_preprocessed
+    # test_preprocessed_svc.csv
+    # test_preprocessed_logreg.csv
+    # test_preprocessed_rf.csv
+    # test_preprocessed_xgb.csv
+
+    # scaler
+    # scaler_svc.pkl
+    # scaler_logreg.pkl
