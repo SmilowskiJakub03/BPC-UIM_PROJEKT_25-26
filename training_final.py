@@ -1,4 +1,3 @@
-
 # === Import potřebných knihoven === #
 import pandas as pd
 import joblib
@@ -8,13 +7,36 @@ from main import load_data, data_preprocessing, my_model
 # === Finální trénink SVC === #
 def training_final_svc(data_path: str = "diabetes_data.csv"):
     """
-    Finální trénink modelu SVC na celém datasetu.
+    Provede finální trénink SVC modelu na celém dostupném datasetu.
 
-    Parameters
+    Tato funkce slouží k vytvoření definitivního modelu, který bude následně
+    použit pro externí testování ve skriptu `testing.py`. Oproti hlavnímu
+    trénovacímu skriptu (`main.py`) zde neprobíhá rozdělení na trénovací,
+    validační a testovací sadu – model je natrénován na všech dostupných datech
+    pro maximalizaci výkonu finální verze.
+
+    Postup:
+        1. načtení surových dat pomocí `load_data`,
+        2. předzpracování dat stejným způsobem jako při trénování (`data_preprocessing`),
+        3. rozdělení na vstupní proměnné X a cílovou hodnotu y,
+        4. inicializace SVC modelu pomocí `my_model("svc")`,
+        5. škálování vstupních proměnných pomocí `StandardScaler`,
+        6. uložení použitého scaleru pro pozdější použití při testování,
+        7. natrénování modelu na kompletním datasetu,
+        8. uložení finálního modelu ve formátu `.pkl`.
+
+    Parametry
     ----------
     data_path : str
-        Cesta k CSV souboru s daty.
+        Cesta k CSV souboru obsahujícímu vstupní dataset.
+
+    Výstupy
+    -------
+    Uloží dva soubory:
+        - trained_model_svc_final.pkl – finální natrénovaný SVC model,
+        - scaler_svc_final.pkl – scaler použitý při trénování.
     """
+
     # Načtení dat
     df = load_data(data_path)
 

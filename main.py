@@ -18,7 +18,7 @@ Description:
     Tento script slouží jako hlavní spouštěcí bod pro projekt.
     Skript berte jako volný rámec, který můžete upravit dle svých potřeb.    
 """
-# === Import necessary modules === #
+# === Import potřebných modulů === #
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -36,25 +36,21 @@ from sklearn.preprocessing import StandardScaler
 
 # My model
 # ==== LOAD DATA === #
-def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_state: int = 42):
+def load_data(path: str = "diabetes_data.csv", random_state: int = 42):
     """
-    Načte dataset z CSV a rozdělí ho na trénovací a testovací část.
+    Načte dataset z CSV souboru a vrátí jej ve formě pandas DataFrame.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     path : str
-        Cesta k CSV souboru s daty.
-    test_size : float
-        Procento dat určených na testování (0.3 = 30%).
+        Cesta k CSV souboru obsahujícímu vstupní data.
     random_state : int
-        Seed pro reprodukovatelnost rozdělení. random_state=42 zajistí, že rozpad dat i model budou pokaždé stejné
+        Seed pro reprodukovatelnost (zde se nevyužívá, ale zachováno pro kompatibilitu).
 
-    Returns
-    -------
-    train_df : pd.DataFrame
-        Trénovací dataset.
-    test_df : pd.DataFrame
-        Testovací dataset.
+    Návratová hodnota
+    -----------------
+    df : pd.DataFrame
+        Načtený dataset bez dalších úprav.
     """
     df = pd.read_csv(path)
     return df
@@ -62,17 +58,27 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
 # === Preprocessing ====
 def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Předzpracování dat: odstranění chybných hodnot, imputace pomocí KNN.
+    Provede kompletní předzpracování vstupního datasetu:
+        - detekci a označení chybných hodnot jako NaN,
+        - zaokrouhlení hodnot tam, kde je to vhodné,
+        - imputaci chybějících dat pomocí KNN,
+        - obnovení celočíselných datových typů u příslušných sloupců.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     df : pd.DataFrame
-        Vstupní DataFrame s neupravenými daty.
+        Vstupní DataFrame obsahující neupravená a potenciálně chybná data.
 
-    Returns
-    -------
+    Návratová hodnota
+    -----------------
     df_imputed : pd.DataFrame
-        Předzpracovaný dataset po KNN imputaci.
+        Předzpracovaná a imputovaná tabulka připravená pro modelování.
+
+    Poznámka
+    --------
+    Funkce aplikuje doménově specifické kontroly rozsahů (např. fyziologické limity
+    glykemie, BMI, krevního tlaku atd.). Chybné hodnoty jsou převedeny na NaN a následně
+    doplněny pomocí KNNImputer.
     """
 
     # Pregnancies
@@ -118,20 +124,30 @@ def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
 # === MODEL ===
 def my_model(model_type: str = "svc", random_state: int = 42):
     """
-    Vytvoří a vrátí klasifikační model podle zadaného typu.
+    Inicializuje a vrátí klasifikační model zvoleného typu.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     model_type : str
-        Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost. Výchozí hodnota 'rf' = Random Forest
+        Identifikátor modelu. Možné hodnoty:
+            - "logreg" : logistická regrese
+            - "rf"     : Random Forest
+            - "xgb"    : XGBoost classifier
+            - "svc"    : Support Vector Classifier
     random_state : int
-        Seed pro reprodukovatelnost.
+        Seed pro reprodukovatelnost výsledků.
 
-    Returns
+    Návratová hodnota
+    -----------------
+    model : objekt scikit-learn nebo XGBoost
+        Inicializovaný model připravený k trénování na trénovacích datech.
+
+    Výjimky
     -------
-    model : object
-        Inicializovaný model připravený k trénování.
+    ValueError
+        Pokud je zadán neznámý typ modelu.
     """
+
     if model_type == "logreg":
         return LogisticRegression(
             solver="liblinear",
@@ -171,36 +187,36 @@ def my_model(model_type: str = "svc", random_state: int = 42):
         )
 
     else:
-        raise ValueError("Neznámý model_type. Použij 'logreg', 'rf' nebo 'xgb'.")
+        raise ValueError("Neznámý model_type.")
 
 # ========== STATISTICS ==========
 def compute_statistics(y_true, y_pred, plot: bool = True):
     """
-    Vyhodnotí predikce modelu pomocí confusion matrix a Matthews correlation coefficient.
+    Vypočítá a zobrazí základní metriky klasifikační úspěšnosti modelu.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     y_true : array-like
-        Skutečné hodnoty (0/1).
+        Skutečné (pravdivé) štítky tříd 0/1.
     y_pred : array-like
-        Predikované hodnoty (0/1).
+        Predikované štítky tříd 0/1.
     plot : bool
-        Pokud True, vykreslí confusion matrix jako heatmapu.
+        Pokud True, vykreslí matici záměny jako heatmapu pomocí Seaborn.
 
-    Returns
-    -------
+    Návratové hodnoty
+    -----------------
     cm : np.ndarray
-        Confusion matrix [[TN, FP], [FN, TP]].
+        Matice záměny ve formátu [[TN, FP], [FN, TP]].
     mcc : float
-        Matthews correlation coefficient.
+        Matthews correlation coefficient — robustní metrika kvality modelu pro nevyvážené datasety.
+
+    Poznámka
+    --------
+    Funkce vypíše hlavní metriky do konzole a volitelně vykreslí heatmapu,
+    která vizuálně zobrazuje správné a chybné klasifikace.
     """
     mcc = matthews_corrcoef(y_true, y_pred)
     cm = confusion_matrix(y_true, y_pred)
-
-    #True Positive (TP): Počet správně klasifikovaných kladných případů (model předpověděl „ANO“, skutečnost byla „ANO“).
-    #True Negative (TN): Počet správně klasifikovaných záporných případů (model předpověděl „NE“, skutečnost byla „NE“).
-    #False Positive (FP): Počet chybně klasifikovaných kladných případů (model předpověděl „ANO“, ale skutečnost byla „NE“). Také se označuje jako chyba 1. typu.
-    #False Negative (FN): Počet chybně klasifikovaných záporných případů (model předpověděl „NE“, ale skutečnost byla „ANO“). Také se označuje jako chyba 2. typu.
 
     print("\n=== Confusion Matrix ===")
     print(cm)
@@ -222,12 +238,32 @@ def compute_statistics(y_true, y_pred, plot: bool = True):
 # ===MAIN ===
 def main():
     """
-    Hlavní spouštěcí funkce:
-    - načte a předzpracuje data
-    - rozdělí na train/test
-    - vytrénuje model
-    - vyhodnotí predikce na testovací sadě
-    - uloží vytrénovaný model pro pozdější testování
+    Hlavní řídicí funkce celého skriptu.
+
+    Funkce provádí následující kroky:
+        1. načte dataset z CSV,
+        2. provede jeho předzpracování,
+        3. rozdělí data na train / validation / test (poměr 70 / 15 / 15),
+        4. inicializuje vybraný model,
+        5. provede případné škálování dat (pro logreg a SVC),
+        6. natrénuje model na trénovacích datech,
+        7. vyhodnotí výkon modelu na validačních datech,
+        8. uloží vytrénovaný model i scaler (pokud byl použit),
+        9. uloží předzpracovaná testovací data pro další použití.
+
+    Poznámka
+    --------
+    Tato funkce neslouží pouze jako pipeline pro trénování modelu,
+    ale také jako centrální místo pro definici a export důležitých funkcí*
+    (např. `data_preprocessing`, `compute_statistics').
+    Finální verze modelu je dotrénována na celém trénovacím datasetu,
+    aby se maximalizoval jeho výkon před uložením.
+
+    Historie použití
+    ----------------
+    Tento skript původně sloužil k rozdělení dat původního datasetu,
+    jeho předzpracování a k výpočtu hodnotích metrik na validační sadě.
+    Skript nyní slouží zejména pro definici a export důležitých funkcí.
     """
 
     # Načtení dat
