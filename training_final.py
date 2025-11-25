@@ -40,7 +40,7 @@ def training_final_svc(data_path: str = "diabetes_data.csv"):
     # Načtení dat
     df = load_data(data_path)
 
-    # Preproccesing dat
+    # Preprocessing dat
     df = data_preprocessing(df)
 
     # Rozdělení na X a y
