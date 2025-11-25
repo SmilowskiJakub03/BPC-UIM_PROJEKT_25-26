@@ -1,76 +1,61 @@
-import csv
+# === Import knihoven === #
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
 import pandas as pd
 
 
-def boxplots(file_path:str):
+def stats_boxplts_corr_heatmap(file_path:str):
     """
-    Reads csv file, extracs numeric data from each column and generate boxplots
-    with statistics - mean, meadian, std, Q1 and Q3.
-    :param file_path:(str) path to csv file
-    :return: None
-    """
+    Funkce načte CSV soubor, vypíše základní statistiky a zobrazi korelační heatmapu.
 
-    with open(file_path, mode="r") as dta:
-        dt = csv.reader(dta)
-        hdr = next(dt)
-        dt_ar = [row for row in dt]
+    Funkce provádí následující kroky:
+    - Načtení CSV douboru do DataFrame
+    - Zobrazení boxplotů pro každý sloupec
+    - Spočítání a zobrazení nulových hodnot pro každý sloupec
+    - Vypsání souhrných statistik
+    - Vykreslení korelační heatmapy
 
-    dt_ar = np.array(dt_ar, dtype=object)
+    Parametry
+    ----------
+    file_path : str
+        Cesta k CSV souboru, který má být načten a analyzován.
 
-    for i in range(len(hdr)):
-        col_data = dt_ar[:, i]
-
-
-        data = []
-        for val in col_data:
-            try:
-                if val != "":
-                    data.append(float(val))
-            except ValueError:
-                continue
-
-        data = np.array(data, dtype=float)
-
-
-        if data.size == 0:
-            continue
-
-
-        mean_val = np.mean(data)
-        median_val = np.median(data)
-        std_val = np.std(data)
-        q1, q3 = np.percentile(data, [25, 75])
-
-
-        sns.boxplot(data=data, showmeans=True,
-                    meanprops={"marker": "o", "markerfacecolor": "red", "markeredgecolor": "black"},
-                    boxprops={"facecolor": "lightblue"},
-                    medianprops={"color": "blue"})
-
-        plt.title(f"{hdr[i]} test")
-        plt.xlabel(hdr[i])
-
-
-        text = f"Mean = {mean_val:.2f}\nMedian = {median_val:.2f}\nStd = {std_val:.2f}\nQ1 = {q1:.2f}\nQ3 = {q3:.2f}"
-        plt.text(0.5, max(data), text, ha='center', va='bottom', fontsize=9,
-                 bbox=dict(facecolor='white', alpha=0.5, edgecolor='gray'))
-
-        plt.show()
-
-
-def stats_and_corr_heatmap(file_path:str):
-    """
-    Reads csv file into pandas dataframe,
-    displays statistics count, means, std, min, max and percentiles for all columns,
-    counts the number of zero values per column, then displays correlation heatmap.
-    :param file_path: (str) Path to csv file
-    :return: None
+    Návratové hodnoty
+    -------
+        None
     """
 
     df = pd.read_csv(file_path)
+    for i in df.columns:
+        data = df[i].dropna()
+
+        mn = data.mean()
+        med = data.median()
+        stand_dev = data.std()
+        q1 = data.quantile(0.25)
+        q3 = data.quantile(0.75)
+
+
+        plt.figure()
+        sns.boxplot(y=data, showmeans = True,
+                    meanprops={"marker" : "o", "markerfacecolor" : "red", "markeredgecolor" : "black"},
+                    boxprops={"facecolor" : "lightblue"},
+                    medianprops={"color" : "blue"})
+
+        plt.title(f"{i}")
+        plt.xlabel(i)
+
+        stats = (f"Mean = {mn:.2f}\n"
+                 f"Median = {med:.2f}\n"
+                 f"Std = {stand_dev:.2f}\n"
+                 f"Q1 = {q1:.2f}\n"
+                 f"Q3 = {q3:.2f}\n")
+
+        plt.text(0.95, 0.85, stats, ha = "center", va = "bottom", fontsize= 9,
+                transform=plt.gca().transAxes,
+                bbox={"facecolor" : "white", "alpha" : 0.5, "edgecolor" : "gray"})
+
+        plt.show()
 
     head = list(df.columns)
     for i in head:
@@ -92,43 +77,45 @@ def stats_and_corr_heatmap(file_path:str):
     sns.heatmap(df.corr(), annot=True, cmap='coolwarm').set_title('Correlation Heatmap')
     plt.show()
 
+    return None
 
 
 def show_plots_and_stats(idx:int):
     """
-    The function displays boxplots, summary statistics, and a correlation heatmap for the selected file,
-    if the input is invalid, an error message will be shown.
-    :param idx: (int) Index of file path you want to use, integer - 0, 1 or 2
-    :return: None
+    Funkce zobrazí krabicové grafy, souhrné statistiky a korelační heatmapu
+    pro vybraný soubor.
+    Pokud je název souboru neplatný zobrazí se chybová hláška.
+
+    Funkce načte soubor podle zadaného indexu a následně vykreslí:
+    - krabicové grafy
+    - souhrné statistiky
+    - korelační heatmapu
+
+    Parametry
+    ----------
+    idx : int
+        Indexy souboru v seznamu "test_path_file_list".
+        Hodnoty od 0 do 6
+
+    Návratové hodnoty
+    -------
+        None
     """
 
 
-    test_path_file_list = ["diabetes_data.csv", "test_preprocessed_NAN.csv", "train_preprocessed_NAN.csv", "test_preprocessed_IMPUTE.csv","train_preprocessed_IMPUTE.csv",
-                           "train_preprocessed_ZSCORE.csv","test_preprocessed_ZSCORE.csv"]
+    test_path_file_list = ["diabetes_data.csv",
+                           "test_preprocessed_NAN.csv",
+                           "train_preprocessed_NAN.csv",
+                           "test_preprocessed_IMPUTE.csv",
+                           "train_preprocessed_IMPUTE.csv",
+                           "train_preprocessed_ZSCORE.csv",
+                           "test_preprocessed_ZSCORE.csv"]
 
-    if idx == 0:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 1:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 2:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 3:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 4:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 5:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-    elif idx == 6:
-        boxplots(test_path_file_list[idx])
-        stats_and_corr_heatmap(test_path_file_list[idx])
-
+    if idx < len(test_path_file_list):
+        stats_boxplts_corr_heatmap(test_path_file_list[idx])
     else:
         print(f"{idx} is invalid input, it must be an integer")
 
-show_plots_and_stats(6)
+    return None
+
+
