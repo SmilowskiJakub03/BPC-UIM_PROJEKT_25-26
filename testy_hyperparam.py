@@ -18,12 +18,12 @@ def hyper_param_test(model_type: str):
     """
     Provede ladění (GridSearchCV) pro zadaný model pomocí metriky MCC.
 
-    Parameters
+    Parametry
     ----------
     model_type : str
         Typ modelu ("logreg", "rf", "xgb", "svc")
 
-    Returns
+    Návratová hodnota
     -------
     grid_search : objekt GridSearchCV
         Vytrénovaný GridSearch s nejlepšími parametry (dle MCC).
