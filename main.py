@@ -251,6 +251,10 @@ def main():
         8. uloží vytrénovaný model i scaler (pokud byl použit),
         9. uloží předzpracovaná testovací data pro další použití.
 
+    Návratová hodnota
+    -------
+        None
+
     Poznámka
     --------
     Tato funkce neslouží pouze jako pipeline pro trénování modelu,
