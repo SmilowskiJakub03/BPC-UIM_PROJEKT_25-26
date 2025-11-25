@@ -6,6 +6,35 @@ from sklearn.impute import KNNImputer
 from sklearn.preprocessing import StandardScaler
 
 def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_state: int = 42):
+    """
+    Funkce načte dataset z CSV souboru a rozdělího na trénovací a testovací sadu.
+
+    Funkce provádí:
+    - Načtení dat z CSV souboru
+    - Rozdělení na trénovací a testovací sadu
+    - Reset indexů
+
+
+    Parametry
+    ----------
+    path : str, default "diabetes_data.csv
+        Cesta k CSV souboru.
+    test_size : float, default 0.3
+        Poměr dat, která budou při rozdělení přiřazeny do testovací sady.
+    random_state : int, default 42
+        Seed pro náhodné rozdělení.
+
+    Návratová hodnota
+    -------
+    train_df : pd.DataFrame
+        Trénovací sada dat
+    test_df : pd.DataFrame
+        Testovací sada dat
+
+
+
+
+    """
     # Načtení dat
     df = pd.read_csv(path)
 
@@ -21,12 +50,33 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
 
 def data_preprocessing(df: pd.DataFrame, save_path: str ) -> pd.DataFrame:
     """
-    Preprocessing dat podle definovaných pravidel:
+    Funkce provede preprocessing dat podle definovaných pravidel:
+
+    Funkce provádí:
     - nahrazení chybných hodnot za NaN
     - omezení rozsahů pro jednotlivé atributy
     - zaokrouhlení čísel (kromě BMI a DiabetesPedigreeFunction)
+    - imputace chybějících hodnot pomocí KNNImputer
+    - škálování atributů pomocí Z-score
     - uložení datasetu s NaN
     - vykreslení počtu NaN hodnot ve sloupcích
+    - volitelně umožňuje uložit dataset po imputaci nebo se Z-score
+    - volitelně umožňuje výpočet a vizualizaci počtu NaN hodnot
+
+
+    Parametry
+    ----------
+    df : pd.DataFrame
+        Dataset k preprocesingu.
+    save_path : str
+        Cesta pro uložení finálního datasetu.
+
+
+    Návratová hodnota
+    -------
+    df : pd.DataFrame
+        Dataset po preprocesingu s NaN hodnotami
+        Alternativně lze vrátit df_imputed (po KNN imputaci) nebo df_scaled (po Z-score škálování)
     """
 
     # === Pregnancies ===
