@@ -17,7 +17,7 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
 
     Parametry
     ----------
-    path : str, default "diabetes_data.csv
+    path : str, default "diabetes_data.csv"
         Cesta k CSV souboru.
     test_size : float, default 0.3
         Poměr dat, která budou při rozdělení přiřazeny do testovací sady.
@@ -30,11 +30,9 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
         Trénovací sada dat
     test_df : pd.DataFrame
         Testovací sada dat
-
-
-
-
     """
+
+
     # Načtení dat
     df = pd.read_csv(path)
 
@@ -137,7 +135,7 @@ def data_preprocessing(df: pd.DataFrame, save_path: str ) -> pd.DataFrame:
     # print("\nPočet NaN hodnot v každém sloupci:")
     # print(nan_counts)
 
-    # === Vizualizace počtu NaN hodno ===
+    # === Vizualizace počtu NaN hodnot ===
     # plt.figure(figsize=(8,5))
     # nan_counts.plot(kind="bar", color="steelblue", edgecolor="black")
     # plt.title("Počet NaN hodnot ve sloupcích")
