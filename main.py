@@ -18,7 +18,7 @@ Description:
     Tento script slouží jako hlavní spouštěcí bod pro projekt.
     Skript berte jako volný rámec, který můžete upravit dle svých potřeb.    
 """
-# === Import necessary modules === #
+# === Import potřebných modulů === #
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -36,43 +36,49 @@ from sklearn.preprocessing import StandardScaler
 
 # My model
 # ==== LOAD DATA === #
-def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_state: int = 42):
+def load_data(path: str = "diabetes_data.csv", random_state: int = 42):
     """
-    Načte dataset z CSV a rozdělí ho na trénovací a testovací část.
+    Načte dataset z CSV souboru a vrátí jej ve formě pandas DataFrame.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     path : str
-        Cesta k CSV souboru s daty.
-    test_size : float
-        Procento dat určených na testování (0.3 = 30%).
+        Cesta k CSV souboru obsahujícímu vstupní data.
     random_state : int
-        Seed pro reprodukovatelnost rozdělení. random_state=42 zajistí, že rozpad dat i model budou pokaždé stejné
+        Seed pro reprodukovatelnost (zde se nevyužívá, ale zachováno pro kompatibilitu).
 
-    Returns
-    -------
-    train_df : pd.DataFrame
-        Trénovací dataset.
-    test_df : pd.DataFrame
-        Testovací dataset.
+    Návratová hodnota
+    -----------------
+    df : pd.DataFrame
+        Načtený dataset bez dalších úprav.
     """
     df = pd.read_csv(path)
     return df
 
 # === Preprocessing ====
-def data_preprocessing(df: pd.DataFrame, scale_for_model: str = None) -> pd.DataFrame:
+def data_preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Předzpracování dat: odstranění chybných hodnot, imputace pomocí KNN.
+    Provede kompletní předzpracování vstupního datasetu:
+        - detekci a označení chybných hodnot jako NaN,
+        - zaokrouhlení hodnot tam, kde je to vhodné,
+        - imputaci chybějících dat pomocí KNN,
+        - obnovení celočíselných datových typů u příslušných sloupců.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     df : pd.DataFrame
-        Vstupní DataFrame s neupravenými daty.
+        Vstupní DataFrame obsahující neupravená a potenciálně chybná data.
 
-    Returns
-    -------
+    Návratová hodnota
+    -----------------
     df_imputed : pd.DataFrame
-        Předzpracovaný dataset po KNN imputaci.
+        Předzpracovaná a imputovaná tabulka připravená pro modelování.
+
+    Poznámka
+    --------
+    Funkce aplikuje doménově specifické kontroly rozsahů (např. fyziologické limity
+    glykemie, BMI, krevního tlaku atd.). Chybné hodnoty jsou převedeny na NaN a následně
+    doplněny pomocí KNNImputer.
     """
 
     # Pregnancies
@@ -112,57 +118,61 @@ def data_preprocessing(df: pd.DataFrame, scale_for_model: str = None) -> pd.Data
     # Přetypování zpět u integer sloupců
     for col in ["Pregnancies", "BloodPressure", "SkinThickness", "Insulin", "Age"]:
         df_imputed[col] = df_imputed[col].round(0).astype(int)
-
-    # Volitelné Z-score škálování pro logref a svc      # rf a xgb nechceme
-    if scale_for_model in ["logreg","svc"]:
-        scaler = StandardScaler()
-        features = df_imputed.drop(columns=["Outcome"])
-        scaled_features = scaler.fit_transform(features)
-        df_scaled = pd.DataFrame(scaled_features, columns=features.columns)
-        df_scaled["Outcome"] = df_imputed["Outcome"]
-        return df_scaled
-    else:
-        return df_imputed
+    return df_imputed
 
 
 # === MODEL ===
-def my_model(model_type: str = "rf", random_state: int = 42):
+def my_model(model_type: str = "svc", random_state: int = 42):
     """
-    Vytvoří a vrátí klasifikační model podle zadaného typu.
+    Inicializuje a vrátí klasifikační model zvoleného typu.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     model_type : str
-        Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost. Výchozí hodnota 'rf' = Random Forest
+        Identifikátor modelu. Možné hodnoty:
+            - "logreg" : logistická regrese
+            - "rf"     : Random Forest
+            - "xgb"    : XGBoost classifier
+            - "svc"    : Support Vector Classifier
     random_state : int
-        Seed pro reprodukovatelnost.
+        Seed pro reprodukovatelnost výsledků.
 
-    Returns
+    Návratová hodnota
+    -----------------
+    model : objekt scikit-learn nebo XGBoost
+        Inicializovaný model připravený k trénování na trénovacích datech.
+
+    Výjimky
     -------
-    model : object
-        Inicializovaný model připravený k trénování.
+    ValueError
+        Pokud je zadán neznámý typ modelu.
     """
+
     if model_type == "logreg":
         return LogisticRegression(
             solver="liblinear",
             random_state=random_state,
             max_iter=1000,
-            C=0.001
+            C=0.001,
+            class_weight='balanced',
+            penalty = 'l2'
         )
     elif model_type == "rf":
         return RandomForestClassifier(
             n_estimators=100,
             random_state=random_state,
             class_weight="balanced",
-            min_samples_split=5
+            min_samples_split=2,
+            min_samples_leaf=2,
+            max_depth=None
         )
     elif model_type == "xgb":
         return XGBClassifier(
             n_estimators=300,
             learning_rate=0.01,
-            max_depth=3,
+            max_depth=4,
             subsample=1,
-            colsample_bytree=1,
+            colsample_bytree=0.8,
             random_state=random_state,
             eval_metric="logloss"
         )
@@ -171,42 +181,42 @@ def my_model(model_type: str = "rf", random_state: int = 42):
             kernel="rbf",
             probability=True,
             class_weight="balanced",
-            C=100.0,
-            gamma=0.01,
+            C=1,
+            gamma=0.1,
             random_state=random_state
         )
 
     else:
-        raise ValueError("Neznámý model_type. Použij 'logreg', 'rf' nebo 'xgb'.")
+        raise ValueError("Neznámý model_type.")
 
 # ========== STATISTICS ==========
 def compute_statistics(y_true, y_pred, plot: bool = True):
     """
-    Vyhodnotí predikce modelu pomocí confusion matrix a Matthews correlation coefficient.
+    Vypočítá a zobrazí základní metriky klasifikační úspěšnosti modelu.
 
-    Parameters
-    ----------
+    Parametry
+    ---------
     y_true : array-like
-        Skutečné hodnoty (0/1).
+        Skutečné (pravdivé) štítky tříd 0/1.
     y_pred : array-like
-        Predikované hodnoty (0/1).
+        Predikované štítky tříd 0/1.
     plot : bool
-        Pokud True, vykreslí confusion matrix jako heatmapu.
+        Pokud True, vykreslí matici záměny jako heatmapu pomocí Seaborn.
 
-    Returns
-    -------
+    Návratové hodnoty
+    -----------------
     cm : np.ndarray
-        Confusion matrix [[TN, FP], [FN, TP]].
+        Matice záměny ve formátu [[TN, FP], [FN, TP]].
     mcc : float
-        Matthews correlation coefficient.
+        Matthews correlation coefficient — robustní metrika kvality modelu pro nevyvážené datasety.
+
+    Poznámka
+    --------
+    Funkce vypíše hlavní metriky do konzole a volitelně vykreslí heatmapu,
+    která vizuálně zobrazuje správné a chybné klasifikace.
     """
     mcc = matthews_corrcoef(y_true, y_pred)
     cm = confusion_matrix(y_true, y_pred)
-
-    #True Positive (TP): Počet správně klasifikovaných kladných případů (model předpověděl „ANO“, skutečnost byla „ANO“).
-    #True Negative (TN): Počet správně klasifikovaných záporných případů (model předpověděl „NE“, skutečnost byla „NE“).
-    #False Positive (FP): Počet chybně klasifikovaných kladných případů (model předpověděl „ANO“, ale skutečnost byla „NE“). Také se označuje jako chyba 1. typu.
-    #False Negative (FN): Počet chybně klasifikovaných záporných případů (model předpověděl „NE“, ale skutečnost byla „ANO“). Také se označuje jako chyba 2. typu.
 
     print("\n=== Confusion Matrix ===")
     print(cm)
@@ -228,36 +238,75 @@ def compute_statistics(y_true, y_pred, plot: bool = True):
 # ===MAIN ===
 def main():
     """
-    Hlavní spouštěcí funkce:
-    - načte a předzpracuje data
-    - rozdělí na train/test
-    - vytrénuje model
-    - vyhodnotí predikce na testovací sadě
-    - uloží vytrénovaný model pro pozdější testování
+    Hlavní řídicí funkce celého skriptu.
+
+    Funkce provádí následující kroky:
+        1. načte dataset z CSV,
+        2. provede jeho předzpracování,
+        3. rozdělí data na train / validation / test (poměr 70 / 15 / 15),
+        4. inicializuje vybraný model,
+        5. provede případné škálování dat (pro logreg a SVC),
+        6. natrénuje model na trénovacích datech,
+        7. vyhodnotí výkon modelu na validačních datech,
+        8. uloží vytrénovaný model i scaler (pokud byl použit),
+        9. uloží předzpracovaná testovací data pro další použití.
+
+    Poznámka
+    --------
+    Tato funkce neslouží pouze jako pipeline pro trénování modelu,
+    ale také jako centrální místo pro definici a export důležitých funkcí*
+    (např. `data_preprocessing`, `compute_statistics').
+    Finální verze modelu je dotrénována na celém trénovacím datasetu,
+    aby se maximalizoval jeho výkon před uložením.
+
+    Historie použití
+    ----------------
+    Tento skript původně sloužil k rozdělení dat původního datasetu,
+    jeho předzpracování a k výpočtu hodnotích metrik na validační sadě.
+    Skript nyní slouží zejména pro definici a export důležitých funkcí.
     """
 
     # Načtení dat
     df = load_data("diabetes_data.csv")
 
     # Preprocessing
-    df = data_preprocessing(df,)
-    # pro zapnutí škálování
-    # Typ modelu: 'logreg' = Logistic Regression, 'svc' = Support Vector Classifier
+    df = data_preprocessing(df)
 
-    # 2. Rozdělení dat: 70/15/15
-    train_df, temp_df = train_test_split(df, test_size=0.3, random_state=42, stratify=df["Outcome"])
-    valid_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42, stratify=temp_df["Outcome"])
-
+    # Rozdělení dat: 70/15/15
+    train_df, temp_df = train_test_split(
+        df, test_size=0.3, random_state=42, stratify=df["Outcome"]
+    )
+    valid_df, test_df = train_test_split(
+        temp_df, test_size=0.5, random_state=42, stratify=temp_df["Outcome"]
+    )
 
     # Rozdělení X a y
     #X → matice vstupních proměnných (nezávislé proměnné, prediktory).
     #y → vektor cílových hodnot (závislá proměnná, co chceme předpovědět).
-    X_train, y_train = train_df.drop(columns=["Outcome"]), train_df["Outcome"]
-    X_valid, y_valid = valid_df.drop(columns=["Outcome"]), valid_df["Outcome"]
+    X_train = train_df.drop(columns=["Outcome"])
+    y_train = train_df["Outcome"]
+
+    X_valid = valid_df.drop(columns=["Outcome"])
+    y_valid = valid_df["Outcome"]
+
+    X_test = test_df.drop(columns=["Outcome"])
+    y_test = test_df["Outcome"]
 
     # Inicializace modelu (výchozí – Random Forest)
-    model = my_model("xgb")
-    # Typ modelu: 'logreg' = Logistic Regression, 'rf' = Random Forest, 'xgb' = XGBoost, 'svc' = Support Vector Classifier
+    model_type = "rf"  # logreg / rf / xgb / svc
+    model = my_model(model_type)
+
+    # volitelné škálování
+    scaler = None
+    if model_type in ["logreg", "svc"]:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train) # fit + transform (učíme se z tréninkových dat)
+        X_valid = scaler.transform(X_valid) # pouze transform (stejné měřítko)
+        X_test = scaler.transform(X_test)  # pouze transform (stejné měřítko)
+
+        # ulož scaler
+        joblib.dump(scaler, f"scaler_{model_type}.pkl")
+        print(f"Scaler uložen jako scaler_{model_type}.pkl")
 
     # Trénink modelu
     model.fit(X_train, y_train)
@@ -269,16 +318,10 @@ def main():
     compute_statistics(y_valid, y_pred_valid,plot=True)
 
     # Uložení modelu
-    #joblib.dump(model, "trained_model_rf.pkl")
-    #joblib.dump(model, "trained_model_logreg.pkl")
-    joblib.dump(model, "trained_model_xgb.pkl")
-    #joblib.dump(model, "trained_model_svc.pkl")
+    joblib.dump(model, f"trained_model_{model_type}.pkl")
 
     # Uložení testovacích dat do CSV
-    #test_df.to_csv("test_preprocessed_rf.csv", index=False)
-    #test_df.to_csv("test_preprocessed_logreg.csv", index=False)
-    test_df.to_csv("test_preprocessed_xgb.csv", index=False)
-    #test_df.to_csv("test_preprocessed_svc.csv", index=False)
+    test_df.to_csv(f"test_preprocessed_{model_type}.csv", index=False)
 
 if __name__ == "__main__":
     main()
