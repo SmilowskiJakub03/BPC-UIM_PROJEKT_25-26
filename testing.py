@@ -103,6 +103,6 @@ if __name__ == "__main__":
     # Spustí test modelu
     test_model(
         model_path="trained_model_svc_final.pkl",
-        scaler_path="scaler_svc_final.pkl.pkl",
+        scaler_path="scaler_svc_final.pkl",
         test_data_path="", # <------------------------------ zadání cesty k testovacímu souboru
     )

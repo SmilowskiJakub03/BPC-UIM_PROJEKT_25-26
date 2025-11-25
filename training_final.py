@@ -23,18 +23,18 @@ def training_final_svc(data_path: str = "diabetes_data.csv"):
         5. škálování vstupních proměnných pomocí `StandardScaler`,
         6. uložení použitého scaleru pro pozdější použití při testování,
         7. natrénování modelu na kompletním datasetu,
-        8. uložení finálního modelu ve formátu `.pkl`.
+        8. uložení dvou souborů ve formátu .pkl:
+          - trained_model_svc_final.pkl – finální natrénovaný SVC model,
+          - scaler_svc_final.pkl – scaler použitý při trénování.`.
 
     Parametry
     ----------
     data_path : str
         Cesta k CSV souboru obsahujícímu vstupní dataset.
 
-    Výstupy
+    Návratová hodnota
     -------
-    Uloží dva soubory:
-        - trained_model_svc_final.pkl – finální natrénovaný SVC model,
-        - scaler_svc_final.pkl – scaler použitý při trénování.
+        None
     """
 
     # Načtení dat
