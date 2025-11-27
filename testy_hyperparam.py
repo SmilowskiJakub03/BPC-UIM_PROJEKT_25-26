@@ -16,20 +16,49 @@ from main import load_data, data_preprocessing
 
 def hyper_param_test(model_type: str):
     """
-    Provede ladění (GridSearchCV) pro zadaný model pomocí metriky MCC.
+    Provede ladění hyperparametrů (GridSearchCV) pro zadaný klasifikační model
+    s použitím Matthews Correlation Coefficient (MCC) jako optimalizační metriky.
+
+    Funkce provádí následující kroky:
+        1. načtení originálního datasetu pomocí `load_data()`,
+        2. kompletní předzpracování dat prostřednictvím `data_preprocessing()`,
+        3. rozdělení dat na trénovací a validační sadu (85 % / 15 %) se stratifikací,
+        4. sestavení pipeline (StandardScaler → model) pro modely vyžadující škálování,
+        5. definici gridu hyperparametrů podle vybraného modelu,
+        6. provedení GridSearchCV s 5-fold cross-validací,
+        7. optimalizaci na základě metriky MCC,
+        8. vypsání nejlepších nalezených parametrů a dosaženého MCC výkonu,
+        9. uložení nejlepšího nalezeného modelu
+
+    Podporované modely (`model_type`):
+        - "logreg" : Logistic Regression
+        - "rf"     : Random Forest Classifier
+        - "xgb"    : XGBoost Classifier
+        - "svc"    : Support Vector Classifier
 
     Parametry
     ----------
     model_type : str
-        Typ modelu ("logreg", "rf", "xgb", "svc")
+        Identifikátor modelu, který má být laděn. Musí být jednou z hodnot:
+        {"logreg", "rf", "xgb", "svc"}.
 
     Návratová hodnota
-    -------
-    grid_search : objekt GridSearchCV
-        Vytrénovaný GridSearch s nejlepšími parametry (dle MCC).
+    -----------------
+    grid_search : GridSearchCV
+        Objekt GridSearchCV obsahující kompletní výsledky ladění, včetně:
+            - nejlepších hyperparametrů (`best_params_`),
+            - nejlepší dosažené hodnoty MCC (`best_score_`),
+            - nejlepší pipeline (`best_estimator_`).
+
+    Poznámky
+    --------
+    - Funkce používá MCC
+    - Ve výsledném .pkl souboru je uložen kompletní pipeline objekt,
+      včetně scaleru (je-li použit) a optimálních hyperparametrů.
+    - Funkce je určena pro explorativní ladění modelů, nikoli pro finální trénink.
     """
 
-    # 1. Načtení a předzpracování dat
+    # Načtení a předzpracování dat
     df = load_data("diabetes_data.csv")
 
     df = data_preprocessing(df)
@@ -106,7 +135,7 @@ def hyper_param_test(model_type: str):
 
     model_pipeline = Pipeline(pipe_steps)
 
-    # === MCC jako skór === #
+    # MCC jako skóre
     mcc_scorer = make_scorer(matthews_corrcoef)
 
     print(f"\n=== Spouštím GridSearchCV pro {model_type.upper()} ===")
@@ -133,7 +162,7 @@ def hyper_param_test(model_type: str):
     return grid_search
 
 
-# === Spouštěcí blok === #
+# Spouštěcí blok
 if __name__ == "__main__":
     model_type = "rf"  # logreg / rf / xgb / svc
     hyper_param_test(model_type)

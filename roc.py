@@ -10,21 +10,31 @@ from main import data_preprocessing
 
 def roc_krivka(model_path: str, test_data_path: str, scaler_path: str = None):
     """
-    Načte model a testovací data, vypočítá ROC křivku a vykreslí ji.
+    Vypočítá a vizualizuje ROC křivku. Funkce načte uložený model a testovací data, provede stejné předzpracování jako při trénování,
+    aplikuje scaler (pokud je k dispozici), vypočítá pravděpodobnostní skóre a vykreslí ROC křivku
+    společně s hodnotou AUC, která slouží jako míra separační schopnosti modelu.
 
-    Parametry
+    arametry
     ----------
     model_path : str
-        Cesta k uloženému modelu (.pkl).
+        Cesta k uloženému modelu ve formátu .pkl, vytvořenému například ve skriptu training_final.
     test_data_path : str
-        Cesta k testovacím datům (.csv).
+        Cesta k CSV souboru obsahujícímu externí nebo validační testovací dataset, který bude použit
+        pro výpočet ROC křivky.
     scaler_path : str, optional
-        Cesta ke scaleru (.pkl) – pokud model vyžaduje škálování.
+        Cesta k uloženému scaleru (.pkl). Používá se u modelů vyžadujících škálování vstupních dat
+        (například SVC nebo LogReg). Pokud není zadán nebo soubor neexistuje, data se neskálují.
 
-    Návratové hodnoty
+    Returns
     -------
     roc_auc : float
-        Hodnota plochy pod ROC křivkou (AUC).
+        Numerická hodnota AUC
+    Notes
+    -----
+    - Funkce podporuje modely implementující `predict_proba()` nebo `decision_function()`.
+    - Pokud model neobsahuje žádnou z těchto metod, vyvolá se výjimka.
+    - ROC křivka je vykreslena pomocí matplotlib a zobrazuje jak skutečný výkon modelu,
+      tak i referenční diagonálu reprezentující náhodnou klasifikaci.
     """
 
     #Načtení modelu

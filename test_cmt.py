@@ -7,29 +7,25 @@ from sklearn.preprocessing import StandardScaler
 
 def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_state: int = 42):
     """
-    Funkce načte dataset z CSV souboru a rozdělího na trénovací a testovací sadu.
-
-    Funkce provádí:
-    - Načtení dat z CSV souboru
-    - Rozdělení na trénovací a testovací sadu
-    - Reset indexů
-
+    Načte dataset z CSV souboru a provede stratifikované rozdělení na trénovací a testovací sadu.
+    Funkce zajišťuje konzistentní přípravu dat při experimentálním testování preprocessing kroků,
+    přičemž obě vrácené množiny mají resetované indexy pro snadnější další zpracování.
 
     Parametry
     ----------
-    path : str, default "diabetes_data.csv"
-        Cesta k CSV souboru.
-    test_size : float, default 0.3
-        Poměr dat, která budou při rozdělení přiřazeny do testovací sady.
-    random_state : int, default 42
-        Seed pro náhodné rozdělení.
+    path : str, default="diabetes_data.csv"
+        Cesta k CSV souboru obsahujícímu vstupní dataset s proměnnými potřebnými pro klasifikaci diabetu.
+    test_size : float, default=0.3
+        Procentuální poměr (0–1), určující velikost testovací sady při rozdělení datasetu.
+    random_state : int, default=42
+        Seed pro reprodukovatelnost náhodného rozdělení dat.
 
-    Návratová hodnota
+    Returns
     -------
-    train_df : pd.DataFrame
-        Trénovací sada dat
-    test_df : pd.DataFrame
-        Testovací sada dat
+    train_df : pandas.DataFrame
+        Trénovací část původního datasetu po rozdělení.
+    test_df : pandas.DataFrame
+        Testovací část datasetu se stejným rozložením cílové proměnné díky stratifikaci.
     """
 
 
@@ -48,33 +44,26 @@ def load_data(path: str = "diabetes_data.csv", test_size: float = 0.3, random_st
 
 def data_preprocessing(df: pd.DataFrame, save_path: str ) -> pd.DataFrame:
     """
-    Funkce provede preprocessing dat podle definovaných pravidel:
-
-    Funkce provádí:
-    - nahrazení chybných hodnot za NaN
-    - omezení rozsahů pro jednotlivé atributy
-    - zaokrouhlení čísel (kromě BMI a DiabetesPedigreeFunction)
-    - imputace chybějících hodnot pomocí KNNImputer
-    - škálování atributů pomocí Z-score
-    - uložení datasetu s NaN
-    - vykreslení počtu NaN hodnot ve sloupcích
-    - volitelně umožňuje uložit dataset po imputaci nebo se Z-score
-    - volitelně umožňuje výpočet a vizualizaci počtu NaN hodnot
-
+    Provádí komplexní předzpracování dat podle doménových pravidel pro diabetologický dataset.
+    Funkce aplikuje fyziologické limity pro jednotlivé atributy, převádí chybné hodnoty na NaN,
+    provádí imputaci pomocí KNNImputer a připravuje také Z-score škálovanou verzi dat.
+    Primárně ukládá dataset ve fázi po základním čištění (s NaN hodnotami) a vrací jej ke
+    skladování nebo analýze; alternativně může vrátit i imputovanou či škálovanou variantu.
 
     Parametry
     ----------
-    df : pd.DataFrame
-        Dataset k preprocesingu.
+    df : pandas.DataFrame
+        Vstupní dataset obsahující originální hodnoty atributů, včetně cílové proměnné "Outcome".
+        Očekává se struktura typická pro diabetes dataset (např. Pregnancies, Glucose, BMI atd.).
     save_path : str
-        Cesta pro uložení finálního datasetu.
+        Cesta k výstupnímu CSV souboru, do kterého bude uložena verze datasetu po provedení
+        základního čištění (nahrazení chybných hodnot NaN a úpravě rozsahů).
 
-
-    Návratová hodnota
+    Returns
     -------
-    df : pd.DataFrame
-        Dataset po preprocesingu s NaN hodnotami
-        Alternativně lze vrátit df_imputed (po KNN imputaci) nebo df_scaled (po Z-score škálování)
+    pandas.DataFrame
+        DataFrame obsahující dataset po aplikaci kontrol rozsahů a označení chybných hodnot
+        jako NaN. Slouží jako základ pro následné imputace nebo škálování.
     """
 
     # === Pregnancies ===
